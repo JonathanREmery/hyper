@@ -1,14 +1,8 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <stdio.h>
-#include <sys/socket.h>
-#include <errno.h>
-#include <unistd.h>
-#include <string.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <stdlib.h>
+#include "net.h"
+#include "client.h"
 
 // server struct
 struct server {
@@ -16,7 +10,7 @@ struct server {
   int port;
 
   int socket;
-  int clients[5];
+  struct client* clients[5];
 };
 
 /* creates a server and returns it
@@ -31,8 +25,12 @@ int listen_server(struct server* s);
  * if successful returns 0, otherwise returns -1 */
 int accept_client(struct server* s);
 
+/* sends a message to the client
+ * if successful returns 0, otherwise returns -1 */
+int send_message(struct server* s, struct client* c, char buff[]);
+
 // closes a client connection
-void close_client(struct server* s, int client_socket);
+void close_connection(struct server* s, struct client* c);
 
 // closes the server
 void close_server(struct server* s);

@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "server.h"
 
 /* creates a server and returns it
@@ -58,7 +60,9 @@ struct server* create_server(char host[], int port) {
   s->socket = server_socket;
 
   // initialize client array
-  memset(s->clients, -1, sizeof(s->clients));
+  for (int i = 0; i < 5; i++) {
+    s->clients[i] = NULL;
+  }
 
   // return server
   return s;
@@ -97,12 +101,17 @@ int accept_client(struct server* s) {
   }
 
   printf("\n[INFO] Accepted client!\n");
-  printf("[INFO] Client: %s\n", inet_ntoa(client_addr.sin_addr));
+
+  // get client host
+  char host[INET_ADDRSTRLEN];
+  strncpy(host, inet_ntoa(client_addr.sin_addr), INET_ADDRSTRLEN);
+
+  printf("[INFO] Client: %s\n", host);
 
   // add client to server
   for (int i = 0; i < 5; i++) {
-    if (s->clients[i] == -1) {
-      s->clients[i] = client_socket;
+    if (s->clients[i] == NULL) {
+      s->clients[i] = create_client(host, client_socket);
       break;
     }
   }
@@ -110,15 +119,22 @@ int accept_client(struct server* s) {
   return 0;
 }
 
-// closes a client connection
-void close_client(struct server* s, int client_socket) {
-  // close socket
-  close(client_socket);
+/* sends a message to the client
+ * if successful returns 0, otherwise returns -1 */
+int send_message(struct server* s, struct client* c, char buff[]) {
+  // send message
+  return send_client(c, buff);
+}
 
-  // find client in array and set to -1
+// closes a client connection
+void close_connection(struct server* s, struct client* c) {
+  // close client
+  close_client(c);
+
+  // find client pointer array an NULL it out
   for (int i = 0; i < 5; i++) {
-    if (s->clients[i] == client_socket) {
-      s->clients[i] = -1;
+    if (s->clients[i] == c) {
+      s->clients[i] = NULL;
       break;
     }
   }

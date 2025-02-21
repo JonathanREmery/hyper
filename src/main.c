@@ -1,4 +1,5 @@
 #include <stdio.h>
+
 #include "server.h"
 
 int main(int argc, char *argv[]) {
@@ -35,24 +36,20 @@ int main(int argc, char *argv[]) {
 
     // send data to clients
     for (int i = 0; i < 5; i++) {
-      if (s->clients[i] == -1) {
+      if (s->clients[i] == NULL) {
         continue;
       }
 
       // send data to client
-      int sent_len = send(s->clients[i], buff, strlen(buff), 0);
-      if (sent_len == -1) {
-        printf("\n[ERROR] Could not send data to client!\n");
-        printf("errno: %d\n", errno);
-
-        close_client(s, s->clients[i]);
+      if (send_message(s, s->clients[i], buff) == -1) {
+        close_connection(s, s->clients[i]);
         continue;
       }
 
       printf("[INFO] Sent data to client!\n");
 
       // close client connection
-      close_client(s, s->clients[i]);
+      close_connection(s, s->clients[i]);
     }
   }
 
