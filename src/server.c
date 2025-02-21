@@ -2,19 +2,24 @@
 
 #include "server.h"
 
-/* creates a server and returns it
- * if there was an error it returns NULL */
-struct server* create_server(char host[], int port) {
+/**
+ * @brief Creates a server and returns it
+ *
+ * @param host Hostname of the server
+ * @param port Port of the server
+ * @return Server_t* Pointer to new server or NULL if error
+ */
+Server_t* create_server(char host[], int port) {
   // initialize server
-  struct server* s = malloc(sizeof(struct server));
-  if (s == NULL) {
+  Server_t* server = malloc(sizeof(Server_t));
+  if (server == NULL) {
     printf("[ERROR] Could not malloc server!\n");
     return NULL;
   }
 
   // set host and port
-  strncpy(s->host, host, INET_ADDRSTRLEN);
-  s->port = port;
+  strncpy(server->host, host, INET_ADDRSTRLEN);
+  server->port = port;
 
   // create server socket
   int server_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -22,7 +27,7 @@ struct server* create_server(char host[], int port) {
     printf("[ERROR] Could not create socket!\n");
     printf("errno: %d\n", errno);
 
-    free(s);
+    free(server);
     return NULL;
   }
 
@@ -33,7 +38,7 @@ struct server* create_server(char host[], int port) {
     printf("errno: %d\n", errno);
 
     close(server_socket);
-    free(s);
+    free(server);
     return NULL;
   }
 
@@ -52,51 +57,59 @@ struct server* create_server(char host[], int port) {
     printf("errno: %d\n", errno);
 
     close(server_socket);
-    free(s);
+    free(server);
     return NULL;
   }
 
   // set server socket
-  s->socket = server_socket;
+  server->socket = server_socket;
 
   // initialize client array
-  for (int i = 0; i < 5; i++) {
-    s->clients[i] = NULL;
+  for (int i = 0; i < MAX_CLIENTS; i++) {
+    server->clients[i] = NULL;
   }
 
   // return server
-  return s;
+  return server;
 }
 
-/* listens for connections on the server
- * if successful returns 0, otherwise returns -1 */
-int listen_server(struct server* s) {
+/**
+ * @brief Listens for connections on the server
+ *
+ * @param server Server_t struct
+ * @return int 0 if successful, -1 if error
+ */
+int listen_server(Server_t* server) {
   // listen for connections
-  if (listen(s->socket, 5) == -1) {
+  if (listen(server->socket, MAX_CLIENTS) == -1) {
     printf("[ERROR] Could not listen on socket!\n");
     printf("errno: %d\n", errno);
 
-    close_server(s);
+    close_server(server);
     return -1;
   }
 
   return 0;
 }
 
-/* accepts a connection on the server and appends to clients
- * if successful returns 0, otherwise returns -1 */
-int accept_client(struct server* s) {
+/**
+ * @brief Accepts a connection on the server and appends to clients
+ *
+ * @param server Server_t struct
+ * @return int 0 if successful, -1 if error
+ */
+int accept_client(Server_t* server) {
   // initialize client address
   struct sockaddr_in client_addr;
   socklen_t sz_client_addr = sizeof(client_addr);
 
   // accept connection
-  int client_socket = accept(s->socket, (struct sockaddr*)&client_addr, &sz_client_addr);
+  int client_socket = accept(server->socket, (struct sockaddr*)&client_addr, &sz_client_addr);
   if (client_socket == -1) {
     printf("[ERROR] Could not accept connection!\n");
     printf("errno: %d\n", errno);
 
-    close_server(s);
+    close_server(server);
     return -1;
   }
 
@@ -109,9 +122,9 @@ int accept_client(struct server* s) {
   printf("[INFO] Client: %s\n", host);
 
   // add client to server
-  for (int i = 0; i < 5; i++) {
-    if (s->clients[i] == NULL) {
-      s->clients[i] = create_client(host, client_socket);
+  for (int i = 0; i < MAX_CLIENTS; i++) {
+    if (server->clients[i] == NULL) {
+      server->clients[i] = create_client(host, client_socket);
       break;
     }
   }
@@ -119,32 +132,48 @@ int accept_client(struct server* s) {
   return 0;
 }
 
-/* sends a message to the client
- * if successful returns 0, otherwise returns -1 */
-int send_message(struct server* s, struct client* c, char buff[]) {
+/**
+ * @brief Sends a message to the client
+ *
+ * @param server Server_t struct
+ * @param client Client_t struct
+ * @param buff Message buffer
+ * @param buff_len Length of the message
+ * @return int 0 if successful, -1 if error
+ */
+int send_message(Server_t* server, Client_t* client, const char buff[], size_t buff_len) {
   // send message
-  return send_client(c, buff);
+  return send_client(client, buff, buff_len);
 }
 
-// closes a client connection
-void close_connection(struct server* s, struct client* c) {
+/**
+ * @brief Closes a client connection
+ *
+ * @param server Server_t struct
+ * @param client Client_t struct
+ */
+void close_connection(Server_t* server, Client_t* client) {
   // close client
-  close_client(c);
+  close_client(client);
 
   // find client pointer array an NULL it out
-  for (int i = 0; i < 5; i++) {
-    if (s->clients[i] == c) {
-      s->clients[i] = NULL;
+  for (int i = 0; i < MAX_CLIENTS; i++) {
+    if (server->clients[i] == client) {
+      server->clients[i] = NULL;
       break;
     }
   }
 }
 
-// closes the server
-void close_server(struct server* s) {
+/**
+ * @brief Closes the server
+ *
+ * @param server Server_t struct
+ */
+void close_server(Server_t* server) {
   // close socket
-  close(s->socket);
+  close(server->socket);
 
   // free server
-  free(s);
+  free(server);
 }
