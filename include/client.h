@@ -24,7 +24,8 @@ typedef struct {
 typedef enum {
   CLIENT_SUCCESS = 0,
   CLIENT_ERR_MALLOC = -1,
-  CLIENT_ERR_SEND = -2
+  CLIENT_ERR_RECV = -2,
+  CLIENT_ERR_SEND = -3
 } ClientResult_t;
 
 /**
@@ -46,11 +47,21 @@ typedef struct {
 Client_t* create_client(char host[], int client_socket, ClientResult_t* result, ClientCleanup_t* cleanup);
 
 /**
- * @brief Sends a message to the client
+ * @brief Recieves a request from the client
  *
  * @param client Client connection struct
- * @param buff Buffer of the message
- * @param buff_len Length of the message
+ * @param buff Request buffer
+ * @param buff_len Length of the request
+ * @param result Result of the operation
+ */
+void recv_client(Client_t* client, char buff[], size_t buff_len, ClientResult_t* result);
+
+/**
+ * @brief Sends a response to the client
+ *
+ * @param client Client connection struct
+ * @param buff Buffer of the response
+ * @param buff_len Length of the response
  * @param result Result of the operation
  */
 void send_client(Client_t* client, const char buff[], size_t buff_len, ClientResult_t* result);

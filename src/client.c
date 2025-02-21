@@ -35,11 +35,29 @@ Client_t* create_client(char host[], int client_socket, ClientResult_t* result, 
 }
 
 /**
- * @brief Sends a message to the client
+ * @brief Recieves a request from the client
  *
  * @param client Client connection struct
- * @param buff Buffer of the message
- * @param buff_len Length of the message
+ * @param buff Buffer of the request
+ * @param buff_len Length of the request
+ * @param result Result of the operation
+ */
+void recv_client(Client_t* client, char buff[], size_t buff_len, ClientResult_t* result) {
+  // initialize result
+  *result = CLIENT_SUCCESS;
+
+  // receive message
+  if (recv(client->socket, buff, buff_len, 0) == -1) {
+    *result = CLIENT_ERR_RECV;
+  }
+}
+
+/**
+ * @brief Sends a response to the client
+ *
+ * @param client Client connection struct
+ * @param buff Buffer of the response
+ * @param buff_len Length of the response
  * @param result Result of the operation
  */
 void send_client(Client_t* client, const char buff[], size_t buff_len, ClientResult_t* result) {

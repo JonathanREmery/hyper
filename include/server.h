@@ -16,6 +16,16 @@
 #define MAX_CLIENTS 5
 
 /**
+ * @brief Server struct
+ */
+typedef struct {
+  char host[INET_ADDRSTRLEN];          /**< Hostname of the server */
+  int port;                            /**< Port of the server     */
+  int socket;                          /**< Socket of the server   */
+  Client_t* clients[MAX_CLIENTS]; /**< Clients of the server  */
+} Server_t;
+
+/**
  * @brief Result of server operations
  */
 typedef enum {
@@ -36,16 +46,6 @@ typedef struct {
   int socket_created;
   int socket;
 } ServerCleanup_t;
-
-/**
- * @brief Server struct
- */
-typedef struct {
-  char host[INET_ADDRSTRLEN];          /**< Hostname of the server */
-  int port;                            /**< Port of the server     */
-  int socket;                          /**< Socket of the server   */
-  Client_t* clients[MAX_CLIENTS]; /**< Clients of the server  */
-} Server_t;
 
 /**
  * @brief Creates a server and returns it
@@ -75,15 +75,26 @@ int listen_server(Server_t* server);
 int accept_client(Server_t* server);
 
 /**
- * @brief Sends a message to the client
+ * @brief Recieves a request from the client
  *
  * @param server Server_t struct
  * @param client Client_t struct
- * @param buff Message buffer
- * @param buff_len Length of the message
+ * @param buff Request buffer
+ * @param buff_len Length of the request
  * @return int 0 if successful, -1 if error
  */
-int send_message(Server_t* server, Client_t* client, const char buff[], size_t buff_len);
+int recieve_request(Server_t* server, Client_t* client, char buff[], size_t buff_len);
+
+/**
+ * @brief Sends a response to the client
+ *
+ * @param server Server_t struct
+ * @param client Client_t struct
+ * @param buff Response buffer
+ * @param buff_len Length of the response
+ * @return int 0 if successful, -1 if error
+ */
+int send_response(Server_t* server, Client_t* client, const char buff[], size_t buff_len);
 
 /**
  * @brief Closes a client connection

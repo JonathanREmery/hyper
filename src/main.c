@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include "server.h"
+#include "request.h"
 
 /**
  * @brief Main function
@@ -13,8 +14,8 @@ int main(int argc, char *argv[]) {
   char host[INET_ADDRSTRLEN];
   int port;
   Server_t* server;
-  ServerResult_t result;
-  ServerCleanup_t cleanup;
+  ServerResult_t server_result;
+  ServerCleanup_t server_cleanup;
 
   // print usage if arguments are not enough
   if (argc < 3) {
@@ -37,15 +38,15 @@ int main(int argc, char *argv[]) {
   }
 
   // create server
-  server = create_server(host, port, &result, &cleanup);
-  if (result != SERVER_SUCCESS) {
+  server = create_server(host, port, &server_result, &server_cleanup);
+  if (server_result != SERVER_SUCCESS) {
     printf("[ERROR] Could not create server!\n");
 
-    if (cleanup.socket_created) {
-      close(cleanup.socket);
+    if (server_cleanup.socket_created) {
+      close(server_cleanup.socket);
     }
 
-    if (cleanup.server_allocated) {
+    if (server_cleanup.server_allocated) {
       free(server);
     }
 
@@ -68,24 +69,51 @@ int main(int argc, char *argv[]) {
       return -1;
     }
 
-    // initialize message buffer
-    char buff[] = "hello client\n";
-
-    // send data to clients
-    for (int i = 0; i < 5; i++) {
+    // loop over clients
+    for (int i = 0; i < MAX_CLIENTS; i++) {
       if (server->clients[i] == NULL) {
         continue;
       }
 
-      // send data to client
-      if (send_message(server, server->clients[i], buff, sizeof(buff)) == -1) {
+      // initialize request buffer
+      char raw_request[1024];
+
+      // recieve request
+      if (recieve_request(server, server->clients[i], raw_request, sizeof(raw_request)) == -1) {
         close_connection(server, server->clients[i]);
         continue;
       }
 
-      printf("[INFO] Sent data to client!\n");
+      // initialize request
+      Request_t* request = NULL;
+      RequestResult_t request_result;
+      RequestCleanup_t request_cleanup = {0};
 
-      // close client connection
+      // parse request
+      request = parse_request(raw_request, &request_result, &request_cleanup);
+      if (request_result != REQUEST_SUCCESS) {
+        printf("[ERROR] Could not parse request!\n");
+
+        // free request if needed
+        if (request_cleanup.request_allocated) {
+          free(request);
+        }
+
+        // close connection
+        close_connection(server, server->clients[i]);
+        continue;
+      }
+
+      // initialize response
+      const char response[] = "<h1>Hello HTTP</h1>";
+
+      // send response
+      if (send_response(server, server->clients[i], response, strlen(response)) == -1) {
+        close_connection(server, server->clients[i]);
+        continue;
+      }
+
+      // close connection
       close_connection(server, server->clients[i]);
     }
   }

@@ -151,19 +151,43 @@ int accept_client(Server_t* server) {
 }
 
 /**
- * @brief Sends a message to the client
+ * @brief Recieves a request from the client
  *
  * @param server Server_t struct
  * @param client Client_t struct
- * @param buff Message buffer
- * @param buff_len Length of the message
+ * @param buff Request buffer
+ * @param buff_len Length of the request
  * @return int 0 if successful, -1 if error
  */
-int send_message(Server_t* server, Client_t* client, const char buff[], size_t buff_len) {
+int recieve_request(Server_t* server, Client_t* client, char buff[], size_t buff_len) {
   // initialize client result
   ClientResult_t result;
 
-  // send message
+  // recieve request
+  recv_client(client, buff, buff_len, &result);
+
+  // check result
+  if (result != CLIENT_SUCCESS) {
+    return -1;
+  }
+
+  return 0;
+}
+
+/**
+ * @brief Sends a response to the client
+ *
+ * @param server Server_t struct
+ * @param client Client_t struct
+ * @param buff Response buffer
+ * @param buff_len Length of the response
+ * @return int 0 if successful, -1 if error
+ */
+int send_response(Server_t* server, Client_t* client, const char buff[], size_t buff_len) {
+  // initialize client result
+  ClientResult_t result;
+
+  // send response
   send_client(client, buff, buff_len, &result);
 
   // check result
