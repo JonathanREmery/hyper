@@ -51,6 +51,7 @@ Request_t* parse_request(const char raw_request[], RequestResult_t* result, Requ
 
   // set cleanup allocation flag
   cleanup->request_allocated = 1;
+  cleanup->request = request;
 
   // initialize method
   char method[METHOD_LEN] = {0};

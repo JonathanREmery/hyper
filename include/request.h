@@ -39,6 +39,7 @@ typedef enum {
  */
 typedef struct {
   int request_allocated;
+  void* request;
 } RequestCleanup_t;
 
 /**

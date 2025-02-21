@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
 
         // free request if needed
         if (request_cleanup.request_allocated) {
-          free(request);
+          free(request_cleanup.request);
         }
 
         // close connection
