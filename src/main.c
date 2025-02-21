@@ -13,6 +13,8 @@ int main(int argc, char *argv[]) {
   char host[INET_ADDRSTRLEN];
   int port;
   Server_t* server;
+  ServerResult_t result;
+  ServerCleanup_t cleanup;
 
   // print usage if arguments are not enough
   if (argc < 3) {
@@ -35,9 +37,18 @@ int main(int argc, char *argv[]) {
   }
 
   // create server
-  server = create_server(host, port);
-  if (server == NULL) {
+  server = create_server(host, port, &result, &cleanup);
+  if (result != SERVER_SUCCESS) {
     printf("[ERROR] Could not create server!\n");
+
+    if (cleanup.socket_created) {
+      close(cleanup.socket);
+    }
+
+    if (cleanup.server_allocated) {
+      free(server);
+    }
+
     return -1;
   }
 

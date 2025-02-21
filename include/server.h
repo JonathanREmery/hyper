@@ -16,6 +16,28 @@
 #define MAX_CLIENTS 5
 
 /**
+ * @brief Result of server operations
+ */
+typedef enum {
+  SERVER_SUCCESS = 0,
+  SERVER_ERR_MALLOC = -1,
+  SERVER_ERR_SOCKET = -2,
+  SERVER_ERR_SETSOCKOPT = -3,
+  SERVER_ERR_BIND = -4,
+  SERVER_ERR_LISTEN = -5,
+  SERVER_ERR_ACCEPT = -6,
+} ServerResult_t;
+
+/**
+ * @brief Server cleanup struct
+ */
+typedef struct {
+  int server_allocated;
+  int socket_created;
+  int socket;
+} ServerCleanup_t;
+
+/**
  * @brief Server struct
  */
 typedef struct {
@@ -30,9 +52,11 @@ typedef struct {
  *
  * @param host Hostname of the server
  * @param port Port of the server
+ * @param result Result of the operation
+ * @param cleanup Cleanup struct
  * @return Server_t* Pointer to new server or NULL if error
  */
-Server_t* create_server(char host[], int port);
+Server_t* create_server(char host[], int port, ServerResult_t* result, ServerCleanup_t* cleanup);
 
 /**
  * @brief Listens for connections on the server

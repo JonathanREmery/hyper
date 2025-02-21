@@ -7,15 +7,26 @@
  *
  * @param host Hostname of the server
  * @param port Port of the server
+ * @param result Result of the operation
+ * @param cleanup Cleanup struct
  * @return Server_t* Pointer to new server or NULL if error
  */
-Server_t* create_server(char host[], int port) {
+Server_t* create_server(char host[], int port, ServerResult_t* result, ServerCleanup_t* cleanup) {
+  // initialize result
+  *result = SERVER_SUCCESS;
+
+  // initialize cleanup
+  cleanup->server_allocated = 0;
+  cleanup->socket_created = 0;
+  cleanup->socket = 0;
+
   // initialize server
   Server_t* server = malloc(sizeof(Server_t));
   if (server == NULL) {
-    printf("[ERROR] Could not malloc server!\n");
+    *result = SERVER_ERR_MALLOC;
     return NULL;
   }
+  cleanup->server_allocated = 1;
 
   // set host and port
   strncpy(server->host, host, INET_ADDRSTRLEN);
@@ -24,21 +35,21 @@ Server_t* create_server(char host[], int port) {
   // create server socket
   int server_socket = socket(AF_INET, SOCK_STREAM, 0);
   if (server_socket == -1) {
-    printf("[ERROR] Could not create socket!\n");
-    printf("errno: %d\n", errno);
-
-    free(server);
+    *result = SERVER_ERR_SOCKET;
     return NULL;
   }
+
+  // set server socket
+  server->socket = server_socket;
+
+  // set cleanup socket created and socket
+  cleanup->socket_created = 1;
+  cleanup->socket = server_socket;
 
   // set socket to be reusable
   int opt = 1;
   if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) == -1) {
-    printf("[ERROR] Could not set socket options!\n");
-    printf("errno: %d\n", errno);
-
-    close(server_socket);
-    free(server);
+    *result = SERVER_ERR_SETSOCKOPT;
     return NULL;
   }
 
@@ -53,16 +64,9 @@ Server_t* create_server(char host[], int port) {
 
   // bind socket to server address
   if (bind(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == -1) {
-    printf("[ERROR] Could not bind socket!\n");
-    printf("errno: %d\n", errno);
-
-    close(server_socket);
-    free(server);
+    *result = SERVER_ERR_BIND;
     return NULL;
   }
-
-  // set server socket
-  server->socket = server_socket;
 
   // initialize client array
   for (int i = 0; i < MAX_CLIENTS; i++) {
@@ -109,7 +113,6 @@ int accept_client(Server_t* server) {
     printf("[ERROR] Could not accept connection!\n");
     printf("errno: %d\n", errno);
 
-    close_server(server);
     return -1;
   }
 
@@ -124,7 +127,22 @@ int accept_client(Server_t* server) {
   // add client to server
   for (int i = 0; i < MAX_CLIENTS; i++) {
     if (server->clients[i] == NULL) {
-      server->clients[i] = create_client(host, client_socket);
+      // initialize cleanup
+      ClientResult_t result;
+      ClientCleanup_t cleanup;
+
+      // create client
+      server->clients[i] = create_client(host, client_socket, &result, &cleanup);
+
+      // check result
+      if (result != CLIENT_SUCCESS) {
+        // cleanup if needed
+        if (cleanup.client_allocated) {
+          // free client
+          close_connection(server, server->clients[i]);
+        }
+      }
+
       break;
     }
   }
@@ -142,8 +160,18 @@ int accept_client(Server_t* server) {
  * @return int 0 if successful, -1 if error
  */
 int send_message(Server_t* server, Client_t* client, const char buff[], size_t buff_len) {
+  // initialize client result
+  ClientResult_t result;
+
   // send message
-  return send_client(client, buff, buff_len);
+  send_client(client, buff, buff_len, &result);
+
+  // check result
+  if (result != CLIENT_SUCCESS) {
+    return -1;
+  }
+
+  return 0;
 }
 
 /**

@@ -19,13 +19,31 @@ typedef struct {
 } Client_t;
 
 /**
+ * @brief Result of client operations
+ */
+typedef enum {
+  CLIENT_SUCCESS = 0,
+  CLIENT_ERR_MALLOC = -1,
+  CLIENT_ERR_SEND = -2
+} ClientResult_t;
+
+/**
+ * @brief Client cleanup struct
+ */
+typedef struct {
+  int client_allocated;
+} ClientCleanup_t;
+
+/**
  * @brief Creates a client connection
  *
  * @param host Hostname of the client
  * @param client_socket Socket of the client
+ * @param result Result of the operation
+ * @param cleanup Client cleanup struct
  * @return Client_t* Pointer to new client or NULL if error
  */
-Client_t* create_client(char host[], int client_socket);
+Client_t* create_client(char host[], int client_socket, ClientResult_t* result, ClientCleanup_t* cleanup);
 
 /**
  * @brief Sends a message to the client
@@ -33,9 +51,9 @@ Client_t* create_client(char host[], int client_socket);
  * @param client Client connection struct
  * @param buff Buffer of the message
  * @param buff_len Length of the message
- * @return int 0 if successful, -1 if error
+ * @param result Result of the operation
  */
-int send_client(Client_t* client, const char buff[], size_t buff_len);
+void send_client(Client_t* client, const char buff[], size_t buff_len, ClientResult_t* result);
 
 /**
  * @brief Closes a client connection
