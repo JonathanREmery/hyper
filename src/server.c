@@ -135,54 +135,6 @@ client_t* accept_client(server_t* server) {
 }
 
 /**
- * @brief Recieves a request from the client
- *
- * @param server server_t struct
- * @param client client_t struct
- * @param buff Request buffer
- * @param buff_len Length of the request
- * @return int 0 if successful, -1 if error
- */
-int recieve_request(server_t* server, client_t* client, char buff[], size_t buff_len) {
-  // initialize client result
-  client_result_t result;
-
-  // recieve request
-  recv_client(client, buff, buff_len, &result);
-
-  // check result
-  if (result != CLIENT_SUCCESS) {
-    return -1;
-  }
-
-  return 0;
-}
-
-/**
- * @brief Sends a response to the client
- *
- * @param server server_t struct
- * @param client client_t struct
- * @param buff Response buffer
- * @param buff_len Length of the response
- * @return int 0 if successful, -1 if error
- */
-int send_response(server_t* server, client_t* client, const char buff[], size_t buff_len) {
-  // initialize client result
-  client_result_t result;
-
-  // send response
-  send_client(client, buff, buff_len, &result);
-
-  // check result
-  if (result != CLIENT_SUCCESS) {
-    return -1;
-  }
-
-  return 0;
-}
-
-/**
  * @brief Creates handler threads
  * 
  * @param server server_t struct
@@ -240,21 +192,53 @@ void* handle_client_thread(void* argp) {
       break;
     }
 
-    char message[512];
-    sprintf(message, "Serving %s to %s\n", request->file_name, client->host);
-    log_message(LOG_INFO, message);
-
-    // initialize response
-    const char response[] = "<h1>Hello Client</h1>";
-
-    // send response
-    send_client(client, response, sizeof(response), &client_result);
+    // handle request
+    handle_request(client, request);
     break;
   }
 
   // close client
   close_client(client);
   return NULL;
+}
+
+/**
+ * @brief Handles a request from a client
+ *
+ * @param client client_t struct
+ * @param request request_t struct
+ * @return int 0 if successful, -1 if error
+ */
+int handle_request(client_t* client, request_t* request) {
+  // initialize result
+  client_result_t result;
+
+  // log request
+  char message[512];
+  sprintf(message, "Serving %s to %s\n", request->file_name, client->host);
+  log_message(LOG_INFO, message);
+
+  // initialize response
+  char response[MAX_RESPONSE_LENGTH];
+  char file_content[MAX_FILE_LENGTH];
+
+  // read file into response
+  int fd = open(request->file_name, O_RDONLY);
+  read(fd, file_content, sizeof(file_content));
+  close(fd);
+
+  // craft response
+  sprintf(response, "HTTP/1.1 200 OK\r\nContent-Length: %lu\r\n\r\n%s", strlen(file_content), file_content);
+
+  // send response
+  send_client(client, response, sizeof(response), &result);
+
+  // check result
+  if (result != CLIENT_SUCCESS) {
+    return -1;
+  }
+
+  return 0;
 }
 
 /**

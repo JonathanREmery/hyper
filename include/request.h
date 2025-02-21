@@ -8,6 +8,9 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+#include "logger.h"
 
 #define HTTP_VERSION_PATTERN "HTTP/"
 
@@ -28,10 +31,11 @@ typedef struct {
  * @brief Result of request operations
  */
 typedef enum {
-  REQUEST_SUCCESS = 0,
-  REQUEST_ERR_MALLOC = -1,
-  REQUEST_ERR_INVALID_METHOD = -2,
-  REQUEST_ERR_INVALID_VERSION = -3
+  REQUEST_SUCCESS             =  0,
+  REQUEST_ERR_MALLOC          = -1,
+  REQUEST_ERR_INVALID_METHOD  = -2,
+  REQUEST_ERR_INVALID_VERSION = -3,
+  REQUEST_ERR_INVALID_FILE    = -4
 } request_result_t;
 
 /**
@@ -57,6 +61,14 @@ int is_valid_method(char method[METHOD_LEN]);
  * @return int 0 if valid, -1 if error
  */
 int is_valid_version(char version[VERSION_LEN]);
+
+/**
+ * @brief Checks if a file path is valid
+ *
+ * @param file_name File name string
+ * @return int 0 if valid, -1 if error
+ */
+int is_valid_file(char file_name[FILE_NAME_LEN]);
 
 /**
  * @brief Parses a request

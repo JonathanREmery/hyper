@@ -6,4 +6,6 @@ hyper is a HTTP/1.1 server written entirely in C
 
 - [X] Establish a TCP connection
 - [X] Handle requests
-- [] Respond with valid HTTP/1.1 responses
+- [X] Respond with valid HTTP/1.1 responses
+
+MVP Achieved!

@@ -31,6 +31,21 @@ int is_valid_version(char version[VERSION_LEN]) {
 }
 
 /**
+ * @brief Checks if a file name is valid
+ *
+ * @param file_name File name string
+ * @return int 0 if valid, -1 if error
+ */
+int is_valid_file(char file_name[FILE_NAME_LEN]) {
+  // check if file exists
+  if (access(file_name, F_OK) == 0) {
+    return 0;
+  }
+
+  return -1;
+}
+
+/**
  * @brief Parses a request
  *
  * @param raw_request Raw request string
@@ -101,6 +116,17 @@ request_t* parse_request(const char raw_request[], request_result_t* result, req
       file_name[i] = '\0';
       break;
     }
+  }
+
+  // default to index.html
+  if (strcmp(file_name, "") == 0) {
+    strncpy(file_name, "index.html", FILE_NAME_LEN);
+  }
+
+  // check file name validity
+  if (is_valid_file(file_name) == -1) {
+    *result = REQUEST_ERR_INVALID_FILE;
+    return NULL;
   }
 
   // set file_name

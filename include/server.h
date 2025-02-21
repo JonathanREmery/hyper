@@ -9,6 +9,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <pthread.h>
+#include <fcntl.h>
 
 #include "net.h"
 #include "logger.h"
@@ -17,6 +18,8 @@
 
 /** Maximum number of concurrent clients */
 #define MAX_CLIENTS 5
+#define MAX_RESPONSE_LENGTH 65536
+#define MAX_FILE_LENGTH 32768
 
 /**
  * @brief Server struct
@@ -92,6 +95,15 @@ int handle_client(server_t* server, client_t* client);
  * @return void* NULL
  */
 void* handle_client_thread(void* argp);
+
+/**
+ * @brief Handles a request from a client
+ *
+ * @param client client_t struct
+ * @param request request_t struct
+ * @return int 0 if successful, -1 if error
+ */
+int handle_request(client_t* client, request_t* request);
 
 /**
  * @brief Closes the server
