@@ -1,5 +1,4 @@
-#include <stdio.h>
-
+#include "logger.h"
 #include "server.h"
 
 /**
@@ -15,16 +14,19 @@ int main(int argc, char *argv[]) {
   server_t* server;
   server_result_t server_result;
   server_cleanup_t server_cleanup;
+  char message[512];
 
   // print usage if arguments are not enough
   if (argc < 3) {
-    printf("[ERROR] Usage: %s <host> <port>\n", argv[0]);
+    sprintf(message, "Usage: %s <host> <port>\n", argv[0]);
+    log_message(LOG_ERROR, message);
+
     return -1;
   }
 
   // get host
   if (strlen(argv[1]) >= INET_ADDRSTRLEN) {
-    printf("[ERROR] Host is too long!\n");
+    log_message(LOG_ERROR, "Host is too long!\n");
     return -1;
   }
   strncpy(host, argv[1], INET_ADDRSTRLEN);
@@ -32,14 +34,14 @@ int main(int argc, char *argv[]) {
   // get port
   port = atoi(argv[2]);
   if (port <= 0 || port > 65535) {
-    printf("[ERROR] Invalid port number!\n");
+    log_message(LOG_ERROR, "Invalid port number!\n");
     return -1;
   }
 
   // create server
   server = create_server(host, port, &server_result, &server_cleanup);
   if (server_result != SERVER_SUCCESS) {
-    printf("[ERROR] Could not create server!\n");
+    log_message(LOG_ERROR, "Could not create server!\n");
 
     if (server_cleanup.socket_created) {
       close(server_cleanup.socket);
@@ -58,7 +60,8 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  printf("[INFO] Listening on %s:%d\n", host, port);
+  sprintf(message, "Listening on %s:%d\n", host, port);
+  log_message(LOG_INFO, message);
 
   // accept connections
   while (1) {

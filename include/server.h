@@ -11,6 +11,7 @@
 #include <pthread.h>
 
 #include "net.h"
+#include "logger.h"
 #include "client.h"
 #include "request.h"
 

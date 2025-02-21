@@ -8,7 +8,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
 #include "net.h"
+#include "logger.h"
 
 /**
  * @brief Client connection struct
