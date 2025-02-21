@@ -9,9 +9,9 @@
  * @param client_socket Socket of the client
  * @param result Result of the operation
  * @param cleanup Client cleanup struct
- * @return Client_t* Pointer to new client or NULL if error
+ * @return client_t* Pointer to new client or NULL if error
  */
-Client_t* create_client(char host[], int client_socket, ClientResult_t* result, ClientCleanup_t* cleanup) {
+client_t* create_client(char host[], int client_socket, client_result_t* result, client_cleanup_t* cleanup) {
   // initialize result
   *result = CLIENT_SUCCESS;
 
@@ -19,7 +19,7 @@ Client_t* create_client(char host[], int client_socket, ClientResult_t* result, 
   cleanup->client_allocated = 0;
 
   // initialize client
-  Client_t* c = malloc(sizeof(Client_t));
+  client_t* c = malloc(sizeof(client_t));
   if (c == NULL) {
     *result = CLIENT_ERR_MALLOC;
     return NULL;
@@ -42,7 +42,7 @@ Client_t* create_client(char host[], int client_socket, ClientResult_t* result, 
  * @param buff_len Length of the request
  * @param result Result of the operation
  */
-void recv_client(Client_t* client, char buff[], size_t buff_len, ClientResult_t* result) {
+void recv_client(client_t* client, char buff[], size_t buff_len, client_result_t* result) {
   // initialize result
   *result = CLIENT_SUCCESS;
 
@@ -60,7 +60,7 @@ void recv_client(Client_t* client, char buff[], size_t buff_len, ClientResult_t*
  * @param buff_len Length of the response
  * @param result Result of the operation
  */
-void send_client(Client_t* client, const char buff[], size_t buff_len, ClientResult_t* result) {
+void send_client(client_t* client, const char buff[], size_t buff_len, client_result_t* result) {
   // initialize result
   *result = CLIENT_SUCCESS;
 
@@ -75,7 +75,7 @@ void send_client(Client_t* client, const char buff[], size_t buff_len, ClientRes
  *
  * @param client Client connection struct
  */
-void close_client(Client_t* client) {
+void close_client(client_t* client) {
   // close socket
   close(client->socket);
 

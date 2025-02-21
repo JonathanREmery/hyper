@@ -1,7 +1,6 @@
 #include <stdio.h>
 
 #include "server.h"
-#include "request.h"
 
 /**
  * @brief Main function
@@ -13,9 +12,9 @@
 int main(int argc, char *argv[]) {
   char host[INET_ADDRSTRLEN];
   int port;
-  Server_t* server;
-  ServerResult_t server_result;
-  ServerCleanup_t server_cleanup;
+  server_t* server;
+  server_result_t server_result;
+  server_cleanup_t server_cleanup;
 
   // print usage if arguments are not enough
   if (argc < 3) {
@@ -64,58 +63,13 @@ int main(int argc, char *argv[]) {
   // accept connections
   while (1) {
     // accept client
-    if (accept_client(server) == -1) {
-      close_server(server);
-      return -1;
+    client_t* client = accept_client(server);
+    if (client == NULL) {
+      continue;
     }
 
-    // loop over clients
-    for (int i = 0; i < MAX_CLIENTS; i++) {
-      if (server->clients[i] == NULL) {
-        continue;
-      }
-
-      // initialize request buffer
-      char raw_request[1024];
-
-      // recieve request
-      if (recieve_request(server, server->clients[i], raw_request, sizeof(raw_request)) == -1) {
-        close_connection(server, server->clients[i]);
-        continue;
-      }
-
-      // initialize request
-      Request_t* request = NULL;
-      RequestResult_t request_result;
-      RequestCleanup_t request_cleanup = {0};
-
-      // parse request
-      request = parse_request(raw_request, &request_result, &request_cleanup);
-      if (request_result != REQUEST_SUCCESS) {
-        printf("[ERROR] Could not parse request!\n");
-
-        // free request if needed
-        if (request_cleanup.request_allocated) {
-          free(request_cleanup.request);
-        }
-
-        // close connection
-        close_connection(server, server->clients[i]);
-        continue;
-      }
-
-      // initialize response
-      const char response[] = "<h1>Hello HTTP</h1>";
-
-      // send response
-      if (send_response(server, server->clients[i], response, strlen(response)) == -1) {
-        close_connection(server, server->clients[i]);
-        continue;
-      }
-
-      // close connection
-      close_connection(server, server->clients[i]);
-    }
+    // handle client
+    handle_client(server, client);
   }
 
   // close server

@@ -8,9 +8,11 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <pthread.h>
 
 #include "net.h"
 #include "client.h"
+#include "request.h"
 
 /** Maximum number of concurrent clients */
 #define MAX_CLIENTS 5
@@ -22,8 +24,7 @@ typedef struct {
   char host[INET_ADDRSTRLEN];          /**< Hostname of the server */
   int port;                            /**< Port of the server     */
   int socket;                          /**< Socket of the server   */
-  Client_t* clients[MAX_CLIENTS]; /**< Clients of the server  */
-} Server_t;
+} server_t;
 
 /**
  * @brief Result of server operations
@@ -36,7 +37,7 @@ typedef enum {
   SERVER_ERR_BIND = -4,
   SERVER_ERR_LISTEN = -5,
   SERVER_ERR_ACCEPT = -6,
-} ServerResult_t;
+} server_result_t;
 
 /**
  * @brief Server cleanup struct
@@ -45,7 +46,7 @@ typedef struct {
   int server_allocated;
   int socket_created;
   int socket;
-} ServerCleanup_t;
+} server_cleanup_t;
 
 /**
  * @brief Creates a server and returns it
@@ -54,61 +55,48 @@ typedef struct {
  * @param port Port of the server
  * @param result Result of the operation
  * @param cleanup Cleanup struct
- * @return Server_t* Pointer to new server or NULL if error
+ * @return server_t* Pointer to new server or NULL if error
  */
-Server_t* create_server(char host[], int port, ServerResult_t* result, ServerCleanup_t* cleanup);
+server_t* create_server(char host[], int port, server_result_t* result, server_cleanup_t* cleanup);
 
 /**
  * @brief Listens for connections on the server
  *
- * @param server Server_t struct
+ * @param server server_t struct
  * @return int 0 if successful, -1 if error
  */
-int listen_server(Server_t* server);
+int listen_server(server_t* server);
 
 /**
  * @brief Accepts a connection on the server and appends to clients
  *
- * @param server Server_t struct
- * @return int 0 if successful, -1 if error
+ * @param server server_t struct
+ * @return client_t* Pointer to new client or NULL if error
  */
-int accept_client(Server_t* server);
+ client_t* accept_client(server_t* server);
 
 /**
- * @brief Recieves a request from the client
- *
- * @param server Server_t struct
- * @param client Client_t struct
- * @param buff Request buffer
- * @param buff_len Length of the request
+ * @brief Creates handler threads
+ * 
+ * @param server server_t struct
+ * @param client client_t struct
  * @return int 0 if successful, -1 if error
  */
-int recieve_request(Server_t* server, Client_t* client, char buff[], size_t buff_len);
+int handle_client(server_t* server, client_t* client);
 
 /**
- * @brief Sends a response to the client
+ * @brief Handles client requests and responds accordingly in a thread
  *
- * @param server Server_t struct
- * @param client Client_t struct
- * @param buff Response buffer
- * @param buff_len Length of the response
- * @return int 0 if successful, -1 if error
+ * @param argp client_t struct
+ * @return void* NULL
  */
-int send_response(Server_t* server, Client_t* client, const char buff[], size_t buff_len);
-
-/**
- * @brief Closes a client connection
- *
- * @param server Server_t struct
- * @param client Client_t struct
- */
-void close_connection(Server_t* server, Client_t* client);
+void* handle_client_thread(void* argp);
 
 /**
  * @brief Closes the server
  *
- * @param server Server_t struct
+ * @param server server_t struct
  */
-void close_server(Server_t* server);
+void close_server(server_t* server);
 
 #endif

@@ -36,14 +36,14 @@ int is_valid_version(char version[VERSION_LEN]) {
  * @param raw_request Raw request string
  * @param result Result of the operation
  * @param cleanup Cleanup struct
- * @return Request_t* Parsed request or NULL if error
+ * @return request_t* Parsed request or NULL if error
  */
-Request_t* parse_request(const char raw_request[], RequestResult_t* result, RequestCleanup_t* cleanup) {
+request_t* parse_request(const char raw_request[], request_result_t* result, request_cleanup_t* cleanup) {
   // initialize result
   *result = REQUEST_SUCCESS;
 
   // initialize request
-  Request_t* request = malloc(sizeof(Request_t));
+  request_t* request = malloc(sizeof(request_t));
   if (request == NULL) {
     *result = REQUEST_ERR_MALLOC;
     return NULL;

@@ -22,7 +22,7 @@ typedef struct {
   char method[METHOD_LEN];             /**< Method    */
   char version[VERSION_LEN];           /**< Version   */
   char file_name[FILE_NAME_LEN];       /**< File name */
-} Request_t;
+} request_t;
 
 /**
  * @brief Result of request operations
@@ -32,7 +32,7 @@ typedef enum {
   REQUEST_ERR_MALLOC = -1,
   REQUEST_ERR_INVALID_METHOD = -2,
   REQUEST_ERR_INVALID_VERSION = -3
-} RequestResult_t;
+} request_result_t;
 
 /**
  * @brief Request cleanup struct
@@ -40,7 +40,7 @@ typedef enum {
 typedef struct {
   int request_allocated;
   void* request;
-} RequestCleanup_t;
+} request_cleanup_t;
 
 /**
  * @brief Checks if a method is valid
@@ -64,8 +64,8 @@ int is_valid_version(char version[VERSION_LEN]);
  * @param raw_request Raw request string
  * @param result Result of the operation
  * @param cleanup Cleanup struct
- * @return Request_t* Parsed request or NULL if error
+ * @return request_t* Parsed request or NULL if error
  */
-Request_t* parse_request(const char raw_request[], RequestResult_t* result, RequestCleanup_t* cleanup);
+request_t* parse_request(const char raw_request[], request_result_t* result, request_cleanup_t* cleanup);
 
 #endif

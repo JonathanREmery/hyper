@@ -9,9 +9,9 @@
  * @param port Port of the server
  * @param result Result of the operation
  * @param cleanup Cleanup struct
- * @return Server_t* Pointer to new server or NULL if error
+ * @return server_t* Pointer to new server or NULL if error
  */
-Server_t* create_server(char host[], int port, ServerResult_t* result, ServerCleanup_t* cleanup) {
+server_t* create_server(char host[], int port, server_result_t* result, server_cleanup_t* cleanup) {
   // initialize result
   *result = SERVER_SUCCESS;
 
@@ -21,7 +21,7 @@ Server_t* create_server(char host[], int port, ServerResult_t* result, ServerCle
   cleanup->socket = 0;
 
   // initialize server
-  Server_t* server = malloc(sizeof(Server_t));
+  server_t* server = malloc(sizeof(server_t));
   if (server == NULL) {
     *result = SERVER_ERR_MALLOC;
     return NULL;
@@ -68,11 +68,6 @@ Server_t* create_server(char host[], int port, ServerResult_t* result, ServerCle
     return NULL;
   }
 
-  // initialize client array
-  for (int i = 0; i < MAX_CLIENTS; i++) {
-    server->clients[i] = NULL;
-  }
-
   // return server
   return server;
 }
@@ -80,10 +75,10 @@ Server_t* create_server(char host[], int port, ServerResult_t* result, ServerCle
 /**
  * @brief Listens for connections on the server
  *
- * @param server Server_t struct
+ * @param server server_t struct
  * @return int 0 if successful, -1 if error
  */
-int listen_server(Server_t* server) {
+int listen_server(server_t* server) {
   // listen for connections
   if (listen(server->socket, MAX_CLIENTS) == -1) {
     printf("[ERROR] Could not listen on socket!\n");
@@ -99,10 +94,10 @@ int listen_server(Server_t* server) {
 /**
  * @brief Accepts a connection on the server and appends to clients
  *
- * @param server Server_t struct
- * @return int 0 if successful, -1 if error
+ * @param server server_t struct
+ * @return client_t* Pointer to new client or NULL if error
  */
-int accept_client(Server_t* server) {
+client_t* accept_client(server_t* server) {
   // initialize client address
   struct sockaddr_in client_addr;
   socklen_t sz_client_addr = sizeof(client_addr);
@@ -113,55 +108,46 @@ int accept_client(Server_t* server) {
     printf("[ERROR] Could not accept connection!\n");
     printf("errno: %d\n", errno);
 
-    return -1;
+    return NULL;
   }
-
-  printf("\n[INFO] Accepted client!\n");
 
   // get client host
   char host[INET_ADDRSTRLEN];
   strncpy(host, inet_ntoa(client_addr.sin_addr), INET_ADDRSTRLEN);
 
-  printf("[INFO] Client: %s\n", host);
+  // initialize client variables
+  client_t* client;
+  client_result_t result;
+  client_cleanup_t cleanup;
 
-  // add client to server
-  for (int i = 0; i < MAX_CLIENTS; i++) {
-    if (server->clients[i] == NULL) {
-      // initialize cleanup
-      ClientResult_t result;
-      ClientCleanup_t cleanup;
+  // create client
+  client = create_client(host, client_socket, &result, &cleanup);
 
-      // create client
-      server->clients[i] = create_client(host, client_socket, &result, &cleanup);
-
-      // check result
-      if (result != CLIENT_SUCCESS) {
-        // cleanup if needed
-        if (cleanup.client_allocated) {
-          // free client
-          close_connection(server, server->clients[i]);
-        }
-      }
-
-      break;
+  // check result
+  if (result != CLIENT_SUCCESS) {
+    // cleanup if needed
+    if (cleanup.client_allocated) {
+      close_client(client);
     }
+
+    return NULL;
   }
 
-  return 0;
+  return client;
 }
 
 /**
  * @brief Recieves a request from the client
  *
- * @param server Server_t struct
- * @param client Client_t struct
+ * @param server server_t struct
+ * @param client client_t struct
  * @param buff Request buffer
  * @param buff_len Length of the request
  * @return int 0 if successful, -1 if error
  */
-int recieve_request(Server_t* server, Client_t* client, char buff[], size_t buff_len) {
+int recieve_request(server_t* server, client_t* client, char buff[], size_t buff_len) {
   // initialize client result
-  ClientResult_t result;
+  client_result_t result;
 
   // recieve request
   recv_client(client, buff, buff_len, &result);
@@ -177,15 +163,15 @@ int recieve_request(Server_t* server, Client_t* client, char buff[], size_t buff
 /**
  * @brief Sends a response to the client
  *
- * @param server Server_t struct
- * @param client Client_t struct
+ * @param server server_t struct
+ * @param client client_t struct
  * @param buff Response buffer
  * @param buff_len Length of the response
  * @return int 0 if successful, -1 if error
  */
-int send_response(Server_t* server, Client_t* client, const char buff[], size_t buff_len) {
+int send_response(server_t* server, client_t* client, const char buff[], size_t buff_len) {
   // initialize client result
-  ClientResult_t result;
+  client_result_t result;
 
   // send response
   send_client(client, buff, buff_len, &result);
@@ -199,30 +185,86 @@ int send_response(Server_t* server, Client_t* client, const char buff[], size_t 
 }
 
 /**
- * @brief Closes a client connection
- *
- * @param server Server_t struct
- * @param client Client_t struct
+ * @brief Creates handler threads
+ * 
+ * @param server server_t struct
+ * @param client client_t struct
+ * @return int 0 if successful, -1 if error
  */
-void close_connection(Server_t* server, Client_t* client) {
-  // close client
-  close_client(client);
+int handle_client(server_t* server, client_t* client) {
+  // create thread
+  pthread_t handler_thread;
+  if (pthread_create(&handler_thread, NULL, handle_client_thread, client) != 0) {
+    printf("[ERROR] Failed to create handler thread!\n");
+    return -1;
+  }
 
-  // find client pointer array an NULL it out
-  for (int i = 0; i < MAX_CLIENTS; i++) {
-    if (server->clients[i] == client) {
-      server->clients[i] = NULL;
+  // detach thread
+  pthread_detach(handler_thread);
+
+  return 0;
+}
+
+/**
+ * @brief Handles client requests and responds accordingly in a thread
+ *
+ * @param argp client_t struct
+ * @return void* NULL
+ */
+void* handle_client_thread(void* argp) {
+  // initialize client
+  client_t* client = (client_t*)argp;
+  client_result_t client_result;
+  client_cleanup_t client_cleanup = {0};
+
+  while (1) {
+    // initialize request buffer
+    char raw_request[1024];
+
+    // recieve request
+    recv_client(client, raw_request, sizeof(raw_request), &client_result);
+    if (client_result != CLIENT_SUCCESS) {
       break;
     }
+
+    // initialize request variables
+    request_t* request;
+    request_result_t request_result;
+    request_cleanup_t request_cleanup = {0};
+
+    // parse request
+    request = parse_request(raw_request, &request_result, &request_cleanup);
+    if (request_result != REQUEST_SUCCESS) {
+      if (request_cleanup.request_allocated) {
+        free(request_cleanup.request);
+      }
+
+      break;
+    }
+
+    char info_message[512];
+    sprintf(info_message, "[INFO] Serving %s to %s\n", request->file_name, client->host);
+    write(1, info_message, strlen(info_message));
+
+    // initialize response
+    const char response[] = "<h1>Hello Client</h1>";
+
+    // send response
+    send_client(client, response, sizeof(response), &client_result);
+    break;
   }
+
+  // close client
+  close_client(client);
+  return NULL;
 }
 
 /**
  * @brief Closes the server
  *
- * @param server Server_t struct
+ * @param server server_t struct
  */
-void close_server(Server_t* server) {
+void close_server(server_t* server) {
   // close socket
   close(server->socket);
 
