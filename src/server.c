@@ -165,7 +165,6 @@ void* handle_client_thread(void* argp) {
   // initialize client
   client_t* client = (client_t*)argp;
   client_result_t client_result;
-  client_cleanup_t client_cleanup = {0};
 
   while (1) {
     // initialize request buffer
