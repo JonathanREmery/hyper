@@ -14,13 +14,10 @@ int main(int argc, char *argv[]) {
   server_t* server;
   server_result_t server_result;
   server_cleanup_t server_cleanup;
-  char message[512];
 
   // print usage if arguments are not enough
   if (argc < 3) {
-    sprintf(message, "Usage: %s <host> <port>\n", argv[0]);
-    log_message(LOG_ERROR, message);
-
+    log_message(LOG_ERROR, "Usage: %s <host> <port>\n", argv[0]);
     return -1;
   }
 
@@ -60,8 +57,7 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  sprintf(message, "Listening on %s:%d\n", host, port);
-  log_message(LOG_INFO, message);
+  log_message(LOG_INFO, "Listening on %s:%d\n", host, port);
 
   // accept connections
   while (1) {

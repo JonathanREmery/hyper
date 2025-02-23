@@ -81,7 +81,7 @@ server_t* create_server(char host[], int port, server_result_t* result, server_c
 int listen_server(server_t* server) {
   // listen for connections
   if (listen(server->socket, MAX_CLIENTS) == -1) {
-    log_message(LOG_ERROR, "Could not listen on socket!\n");
+    log_message(LOG_ERROR, "Could not listen on socket: %s\n", strerror(errno));
 
     close_server(server);
     return -1;
@@ -104,8 +104,7 @@ client_t* accept_client(server_t* server) {
   // accept connection
   int client_socket = accept(server->socket, (struct sockaddr*)&client_addr, &sz_client_addr);
   if (client_socket == -1) {
-    log_message(LOG_ERROR, "Could not accept connection!\n");
-
+    log_message(LOG_ERROR, "Could not accept connection: %s\n", strerror(errno));
     return NULL;
   }
 
@@ -145,7 +144,7 @@ int handle_client(server_t* server, client_t* client) {
   // create thread
   pthread_t handler_thread;
   if (pthread_create(&handler_thread, NULL, handle_client_thread, client) != 0) {
-    log_message(LOG_ERROR, "Failed to create handler thread!\n");
+    log_message(LOG_ERROR, "Failed to create handler thread: %s\n", strerror(errno));
     return -1;
   }
 
@@ -213,9 +212,7 @@ int handle_request(client_t* client, request_t* request) {
   client_result_t result;
 
   // log request
-  char message[512];
-  sprintf(message, "Serving %s to %s\n", request->file_name, client->host);
-  log_message(LOG_INFO, message);
+  log_message(LOG_INFO, "Serving %s to client %s\n", request->file_name, client->host);
 
   // initialize response
   char response[MAX_RESPONSE_LENGTH];

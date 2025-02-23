@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdarg.h>
 
 /**
  * @brief Logging levels
@@ -20,11 +21,12 @@ typedef enum {
 } log_level_t;
 
 /**
- * @brief Logs a message
+ * @brief Logs a formatted message
  *
  * @param level Logging level
- * @param message Message to log
+ * @param format Format string
+ * @param ... Variable arguments to format
  */
-void log_message(log_level_t level, const char message[]);
+void log_message(log_level_t level, const char* format, ...);
 
 #endif
